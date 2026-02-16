@@ -1,21 +1,30 @@
-const cache = {};
+// Image source cache - preloaded once
+const srcCache = {};
+const imgCache = {};
 
 export default class Symbol {
   constructor(name = Symbol.random()) {
     this.name = name;
-
-    if (cache[name]) {
-      this.img = cache[name].cloneNode();
-    } else {
-      this.img = new Image();
-      this.img.src = require(`../assets/symbols/${name}.svg`);
-
-      cache[name] = this.img;
-    }
   }
 
+  // Get the image source URL for a symbol name
+  static getImageSrc(name) {
+    if (!srcCache[name]) {
+      srcCache[name] = require(`../assets/symbols/${name}.svg`);
+    }
+    return srcCache[name];
+  }
+
+  // Preload all symbol images into browser cache
   static preload() {
-    Symbol.symbols.forEach((symbol) => new Symbol(symbol));
+    Symbol.symbols.forEach((symbol) => {
+      const src = Symbol.getImageSrc(symbol);
+      if (!imgCache[symbol]) {
+        const img = new Image();
+        img.src = src;
+        imgCache[symbol] = img;
+      }
+    });
   }
 
   static get symbols() {

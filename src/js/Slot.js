@@ -22,10 +22,11 @@ export default class Slot {
     ];
 
     this.container = domElement;
+    this.isSpinning = false;
 
     this.reels = Array.from(this.container.getElementsByClassName("reel")).map(
       (reelContainer, idx) =>
-        new Reel(reelContainer, idx, this.currentSymbols[idx])
+        new Reel(reelContainer, idx, this.currentSymbols[idx]),
     );
 
     this.spinButton = document.getElementById("spin");
@@ -41,6 +42,10 @@ export default class Slot {
   }
 
   spin() {
+    // Prevent multiple simultaneous spins
+    if (this.isSpinning) return Promise.resolve();
+
+    this.isSpinning = true;
     this.currentSymbols = this.nextSymbols;
     this.nextSymbols = [
       [Symbol.random(), Symbol.random(), Symbol.random()],
@@ -53,11 +58,11 @@ export default class Slot {
     this.onSpinStart(this.nextSymbols);
 
     return Promise.all(
-      this.reels.map((reel) => {
-        reel.renderSymbols(this.nextSymbols[reel.idx]);
-        return reel.spin();
-      })
-    ).then(() => this.onSpinEnd(this.nextSymbols));
+      this.reels.map((reel) => reel.spin(this.nextSymbols[reel.idx])),
+    ).then(() => {
+      this.isSpinning = false;
+      this.onSpinEnd(this.nextSymbols);
+    });
   }
 
   onSpinStart(symbols) {
