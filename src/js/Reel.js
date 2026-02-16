@@ -41,12 +41,13 @@ export default class Reel {
   }
 
   get extraSymbols() {
-    // More symbols for longer reels = smoother scroll
-    return Math.floor(this.factor) * 10;
+    // More symbols for longer reels = smoother scroll with visible motion
+    return Math.floor(this.factor) * 15;
   }
 
   get factor() {
-    return 1 + Math.pow(this.idx / 2, 2);
+    // Increased factor for more dramatic staggered effect
+    return 1.2 + Math.pow(this.idx / 2, 2);
   }
 
   updateSizes() {
@@ -88,6 +89,7 @@ export default class Reel {
     // They're already there from last spin
 
     // Fill middle with random symbols (positions 3 to totalSlots-4)
+    // Use all available symbols for variety
     for (let i = 3; i < this.totalSlots - 3; i++) {
       this.setSymbolAt(i, Symbol.random());
     }
@@ -104,6 +106,7 @@ export default class Reel {
       }
 
       this.isSpinning = true;
+      this.reelContainer.classList.add("spinning");
       this.prepareForSpin(nextSymbols);
 
       // Calculate scroll distance
@@ -112,16 +115,20 @@ export default class Reel {
       const symbolHeight = reelHeight / 3;
       const scrollDistance = (this.totalSlots - 3) * symbolHeight;
 
-      // Apply the scroll animation
+      // Apply the scroll animation with enhanced easing
       requestAnimationFrame(() => {
-        const duration = this.factor * 1000;
+        // Duration based on factor - creates staggered stop effect
+        const duration = this.factor * 800;
 
-        this.strip.style.transition = `transform ${duration}ms cubic-bezier(0.25, 0.1, 0.25, 1)`;
+        // Use custom cubic-bezier for realistic slot machine feel
+        // Fast start, gradual slowdown with slight bounce
+        this.strip.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0.85, 0.35, 1.02)`;
         this.strip.style.transform = `translateY(-${scrollDistance}px)`;
 
         // Wait for animation to complete
         setTimeout(() => {
           this.isSpinning = false;
+          this.reelContainer.classList.remove("spinning");
 
           // After animation, we need to:
           // 1. Reset transform to 0
