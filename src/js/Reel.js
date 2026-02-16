@@ -35,9 +35,15 @@ export default class Reel {
     // Animation state
     this.isSpinning = false;
 
-    // Update sizes on window resize
+    // Update sizes on resize and late layout/first-paint conditions
     this.updateSizes();
+    this.ensureInitialLayout();
     window.addEventListener("resize", () => this.updateSizes());
+
+    if (typeof ResizeObserver !== "undefined") {
+      this._resizeObserver = new ResizeObserver(() => this.updateSizes());
+      this._resizeObserver.observe(this.reelContainer);
+    }
   }
 
   get extraSymbols() {
@@ -51,13 +57,34 @@ export default class Reel {
   }
 
   updateSizes() {
-    const reelHeight = this.reelContainer.offsetHeight;
+    const reelHeight = this.reelContainer.getBoundingClientRect().height;
+    if (!reelHeight || reelHeight < 10) return false;
+
     const symbolHeight = reelHeight / 3;
 
     // Set each symbol's height explicitly
     this.imgElements.forEach((img) => {
       img.style.height = `${symbolHeight}px`;
+      img.style.minHeight = `${symbolHeight}px`;
     });
+
+    return true;
+  }
+
+  ensureInitialLayout() {
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const retry = () => {
+      const ok = this.updateSizes();
+      if (ok) return;
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        setTimeout(retry, 80);
+      }
+    };
+
+    retry();
   }
 
   setSymbolAt(slotIndex, symbolName) {

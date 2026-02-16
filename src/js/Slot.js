@@ -3,8 +3,6 @@ import Symbol from "./Symbol.js";
 
 export default class Slot {
   constructor(domElement, config = {}) {
-    Symbol.preload();
-
     this.currentSymbols = [
       ["death_star", "death_star", "death_star"],
       ["death_star", "death_star", "death_star"],
@@ -23,15 +21,9 @@ export default class Slot {
 
     this.container = domElement;
     this.isSpinning = false;
-
-    this.reels = Array.from(this.container.getElementsByClassName("reel")).map(
-      (reelContainer, idx) =>
-        new Reel(reelContainer, idx, this.currentSymbols[idx]),
-    );
+    this.reels = [];
 
     this.spinButton = document.getElementById("spin");
-    this.spinButton.addEventListener("click", () => this.spin());
-
     this.autoPlayCheckbox = document.getElementById("autoplay");
 
     if (config.inverted) {
@@ -39,6 +31,27 @@ export default class Slot {
     }
 
     this.config = config;
+
+    // Disable spin until symbols are preloaded and reels are fully initialized.
+    this.spinButton.disabled = true;
+    this.init();
+  }
+
+  async init() {
+    await Symbol.preload();
+
+    this.reels = Array.from(this.container.getElementsByClassName("reel")).map(
+      (reelContainer, idx) =>
+        new Reel(reelContainer, idx, this.currentSymbols[idx]),
+    );
+
+    this.spinButton.addEventListener("click", () => this.spin());
+
+    // Ensure first paint has correct sizing even on slow CSS/layout.
+    requestAnimationFrame(() => {
+      this.reels.forEach((reel) => reel.updateSizes());
+      this.spinButton.disabled = false;
+    });
   }
 
   spin() {

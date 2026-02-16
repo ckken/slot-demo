@@ -16,15 +16,30 @@ export default class Symbol {
   }
 
   // Preload all symbol images into browser cache
+  // Returns a Promise so callers can wait for first-paint safety.
   static preload() {
-    Symbol.symbols.forEach((symbol) => {
+    const tasks = Symbol.symbols.map((symbol) => {
       const src = Symbol.getImageSrc(symbol);
       if (!imgCache[symbol]) {
         const img = new Image();
-        img.src = src;
         imgCache[symbol] = img;
+        return new Promise((resolve) => {
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = src;
+        });
       }
+
+      const img = imgCache[symbol];
+      if (img.complete) return Promise.resolve(true);
+      return new Promise((resolve) => {
+        const done = () => resolve(true);
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+      });
     });
+
+    return Promise.all(tasks);
   }
 
   static get symbols() {
